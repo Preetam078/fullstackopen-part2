@@ -1,84 +1,70 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react'
+import Header from './components /Header'
+import Filter from './components /Filter'
+import List from './components /List'
+import { addNewContact, fetchContacts, deleteContact } from './services/contacts'
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    {
-      name: 'Arto Hellas',
-      number: '982764782',
-    },
-  ]);
-  const [newName, setNewName] = useState('');
-  const [number, setNumber] = useState('');
-  const[search, setSearch] = useState("");
 
-  const handleFilter = (e) => {
-    e.preventDefault();
-    setSearch(e.target.value)
-    
-      if(search !== ""){
-        const filteredPersons = persons.filter((person) =>
-          person.name.toLowerCase().includes(search.toLowerCase())
-        );
-        setPersons(filteredPersons)
+  const [contacts, setContacts] = useState([]);
+  const [contact, setContact] = useState({name:"", number:""})
+
+  /*run on rendering the component and on reactivating the dependency array */
+  useEffect(() => {
+    const fetchAllContacts = async() => {
+      try {
+        fetchContacts().then(
+          res => {
+            setContacts(res.data)
+          }
+        )
+        .catch(error => {
+          console.error(error.message)
+        })
+      } catch (error) {
+        console.error(error)
       }
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Check if the person already exists
-    const personExists = persons.some(
-      (person) => person.name.toLowerCase() === newName.toLowerCase()
-    );
-
-    if (personExists) {
-      alert(`${newName} is already in the phonebook record`);
-      return; // Stop the function execution
     }
+    fetchAllContacts()
+  }, [addNewContact, deleteContact])
 
-    const newPerson = {
-      name: newName,
-      number: number,
-    };
-
-    setPersons([...persons, newPerson]);
-    setNewName(''); // Clear input after adding
-    setNumber(''); // Clear input after adding
-  };
+  /**Handling the logic if the detailed form is submitted */
+  const handleSubmit = () => {
+    try {
+      const newContact = {
+        ...contact, 
+        id:contacts.length+1
+      }
+      addNewContact(newContact).then(res => {
+        console.log(res.status)
+      })
+      .catch(error => {
+        console.error(error)
+      })
+    } catch (error) {
+      console.log(error)
+    }
+  }
+  
 
   return (
     <div>
-      <h2>Phonebook</h2>
-      <form>
-        <div>
-          filter to search : <input type="text" value={search} onChange={handleFilter}/>
+      <Header></Header>
+      <Filter></Filter>
+      <form style={{marginTop:"10px"}}>
+        <div style={{marginTop:"10px"}}>
+          <label>enter the name</label>
+          <input value={contact.name} onChange={(e) => setContact({...contact, name:e.target.value})} type='text'/>
         </div>
+        <div  style={{marginTop:"10px"}}> 
+          <label>enter the number</label>
+          <input type='text'value={contact.number} onChange={(e) => setContact({...contact, number:e.target.value})}/>
+        </div>
+        <button onClick={handleSubmit}>add contact</button>
       </form>
-      <br></br>
-      <form onSubmit={handleSubmit}>
-        <div>
-          name: <input type='text' value={newName} onChange={(e) => setNewName(e.target.value)} />
-        </div>
-        <div>
-          number: <input type='text' value={number} onChange={(e) => setNumber(e.target.value)} />
-        </div>
-        <div>
-          <button type='submit'>add</button>
-        </div>
-      </form>
-      <h2>Numbers</h2>
-      {persons.length === 0 ? (
-        <>...</>
-      ) : (
-        <>
-          {persons.map((person) => (
-            <div key={person.name}>
-              {person.name} {person.number}
-            </div>
-          ))}
-        </>
-      )}
+      <List contacts={contacts} deleteContact={deleteContact}></List>
     </div>
-  );
-};
+  )
+}
 
-export default App;
+export default App
